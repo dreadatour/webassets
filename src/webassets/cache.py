@@ -172,7 +172,15 @@ class FilesystemCache(BaseCache):
                 or self.directory == other
                 or id(self) == id(other))
 
+    def _check_dir(self):
+        """Auto-create the default directory
+        """
+        if not os.path.exists(self.directory):
+            os.makedirs(self.directory)
+
     def get(self, key):
+        self._check_dir()
+
         filename = os.path.join(self.directory, '%s' % make_md5(self.V, key))
         if not os.path.exists(filename):
             return None
@@ -185,6 +193,8 @@ class FilesystemCache(BaseCache):
         return safe_unpickle(result)
 
     def set(self, key, data):
+        self._check_dir()
+
         filename = os.path.join(self.directory, '%s' % make_md5(self.V, key))
         f = open(filename, 'wb')
         try:
@@ -208,7 +218,4 @@ def get_cache(option, env):
         directory = os.path.join(env.directory, '.webassets-cache')
     else:
         directory = option
-    # Auto-create the default directory
-    if not os.path.exists(directory):
-        os.makedirs(directory)
     return FilesystemCache(directory)
