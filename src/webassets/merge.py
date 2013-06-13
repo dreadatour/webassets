@@ -7,11 +7,10 @@ try:
     from urllib.request import Request as URLRequest, urlopen
     from urllib.error import HTTPError
 except ImportError:
-    from urllib2 import Request as URLRequest, urlopen
-    from urllib2 import HTTPError
+    from urllib2 import Request as URLRequest, urlopen  # noqa
+    from urllib2 import HTTPError  # noqa
 import logging
 from io import open
-from webassets.six.moves import filter
 
 from .utils import cmp_debug_levels, StringIO
 
@@ -106,8 +105,10 @@ class UrlHunk(BaseHunk):
                     ('url', 'headers', self.url))
                 if headers:
                     etag, lmod = headers
-                    if etag: request.add_header('If-None-Match', etag)
-                    if lmod: request.add_header('If-Modified-Since', lmod)
+                    if etag:
+                        request.add_header('If-None-Match', etag)
+                    if lmod:
+                        request.add_header('If-Modified-Since', lmod)
 
             # Make a request
             try:
@@ -127,7 +128,8 @@ class UrlHunk(BaseHunk):
                         ('url', 'headers', self.url),
                         (response.headers.getheader("ETag"),
                          response.headers.getheader("Last-Modified")))
-                    self.env.cache.set(('url', 'contents', self.url), self._data)
+                    self.env.cache.set(('url', 'contents', self.url),
+                                       self._data)
         return self._data
 
 
@@ -198,7 +200,7 @@ class FilterTool(object):
     """
 
     VALID_TRANSFORMS = ('input', 'output',)
-    VALID_FUNCS =  ('open', 'concat',)
+    VALID_FUNCS = ('open', 'concat',)
 
     def __init__(self, cache=None, no_cache_read=False, kwargs=None):
         self.cache = cache
@@ -247,8 +249,8 @@ class FilterTool(object):
             data = StringIO(hunk.data())
             for filter in filters:
                 log.debug('Running method "%s" of  %s with kwargs=%s',
-                    type, filter, kwargs_final)
-                out = StringIO(u'') # For 2.x, StringIO().getvalue() returns str
+                          type, filter, kwargs_final)
+                out = StringIO()
                 getattr(filter, type)(data, out, **kwargs_final)
                 data = out
                 data.seek(0)
@@ -299,11 +301,11 @@ class FilterTool(object):
 
         def func():
             filter = filters[0]
-            out = StringIO(u'')  # For 2.x, StringIO().getvalue() returns str
+            out = StringIO()
             kwargs_final = self.kwargs.copy()
             kwargs_final.update(kwargs or {})
             log.debug('Running method "%s" of %s with args=%s, kwargs=%s',
-                type, filter, args, kwargs)
+                      type, filter, args, kwargs)
             getattr(filter, type)(out, *args, **kwargs_final)
             return out
 
@@ -338,5 +340,5 @@ def select_filters(filters, level):
     they should run for the given debug level.
     """
     return [f for f in filters
-            if f.max_debug_level is None or
-               cmp_debug_levels(level, f.max_debug_level) <= 0]
+            if f.max_debug_level is None
+            or cmp_debug_levels(level, f.max_debug_level) <= 0]
