@@ -157,8 +157,13 @@ class MemoryHunk(BaseHunk):
 
     def data(self):
         if hasattr(self._data, 'read'):
-            return self._data.read()
-        return self._data
+            raw_data = self._data.read()
+        else:
+            raw_data = self._data
+        try:
+            return raw_data.decode('utf-8')
+        except UnicodeEncodeError:
+            return raw_data
 
     def save(self, filename):
         f = open(filename, 'w', encoding='utf-8')
