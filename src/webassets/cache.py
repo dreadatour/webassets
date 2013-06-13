@@ -206,9 +206,9 @@ def get_cache(option, env):
 
     if option is True:
         directory = os.path.join(env.directory, '.webassets-cache')
-        # Auto-create the default directory
-        if not os.path.exists(directory):
-            os.makedirs(directory)
     else:
         directory = option
+    # Auto-create the default directory
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     return FilesystemCache(directory)
