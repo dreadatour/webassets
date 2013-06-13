@@ -54,11 +54,14 @@ def make_md5(*data):
     def walk(obj):
         if isinstance(obj, (tuple, list)):
             for item in obj:
-                for d in walk(item): yield d
+                for d in walk(item):
+                    yield d
         elif isinstance(obj, dict):
             for k in sorted(obj.keys()):
-                for d in walk(k): yield d
-                for d in walk(obj[k]): yield d
+                for d in walk(k):
+                    yield d
+                for d in walk(obj[k]):
+                    yield d
         elif isinstance(obj, BaseHunk):
             yield obj.data().encode('utf-8')
         elif isinstance(obj, Filter):
@@ -128,9 +131,9 @@ class MemoryCache(BaseCache):
         """Return equality with the config values that instantiate
         this instance.
         """
-        return False == other or \
-               None == other or \
-               id(self) == id(other)
+        return (False == other
+                or None == other
+                or id(self) == id(other))
 
     def get(self, key):
         key = make_hashable(key)
@@ -146,7 +149,7 @@ class MemoryCache(BaseCache):
         self.keys.append(key)
 
         # limit cache to the given capacity
-        to_delete = self.keys[0:max(0, len(self.keys)-self.capacity)]
+        to_delete = self.keys[0:max(0, len(self.keys) - self.capacity)]
         self.keys = self.keys[len(to_delete):]
         for item in to_delete:
             del self.cache[item]
@@ -165,9 +168,9 @@ class FilesystemCache(BaseCache):
         """Return equality with the config values
         that instantiate this instance.
         """
-        return True == other or \
-               self.directory == other or \
-               id(self) == id(other)
+        return (True == other
+                or self.directory == other
+                or id(self) == id(other))
 
     def get(self, key):
         filename = os.path.join(self.directory, '%s' % make_md5(self.V, key))
