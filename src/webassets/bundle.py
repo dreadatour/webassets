@@ -2,11 +2,10 @@ import os
 from os import path
 from webassets import six
 from webassets.six.moves import map
-from webassets.six.moves import zip
 
 from .filter import get_filter
 from .merge import (FileHunk, UrlHunk, FilterTool, merge, merge_filters,
-                   select_filters, MoreThanOneFilterError, NoFilters)
+                    select_filters, MoreThanOneFilterError, NoFilters)
 from .updater import SKIP_CACHE
 from .exceptions import BundleError, BuildError
 from .utils import cmp_debug_levels, urlparse
@@ -70,6 +69,7 @@ class Bundle(object):
 
     def _get_filters(self):
         return self._filters
+
     def _set_filters(self, value):
         """Filters may be specified in a variety of different ways, including
         by giving their name; we need to make sure we resolve everything to an
@@ -94,6 +94,7 @@ class Bundle(object):
 
     def _get_contents(self):
         return self._contents
+
     def _set_contents(self, value):
         self._contents = value
         self._resolved_contents = None
@@ -110,6 +111,7 @@ class Bundle(object):
             return result
         else:
             return self._extra
+
     def _set_extra(self, value):
         self._extra = value
     extra = property(_get_extra, _set_extra, doc="""A custom user dict of
@@ -174,11 +176,14 @@ class Bundle(object):
 
     def _get_depends(self):
         return self._depends
+
     def _set_depends(self, value):
-        self._depends = [value] if isinstance(value, six.string_types) else value
+        self._depends = ([value]
+                         if isinstance(value, six.string_types)
+                         else value)
         self._resolved_depends = None
-    depends = property(_get_depends, _set_depends, doc=
-    """Allows you to define an additional set of files (glob syntax
+    depends = property(_get_depends, _set_depends, doc="""
+    Allows you to define an additional set of files (glob syntax
     is supported), which are considered when determining whether a
     rebuild is required.
     """)
@@ -354,7 +359,9 @@ class Bundle(object):
         # debug=False. The child bundle then DOES want to run those input
         # filters, so we do need to pass them.
         filters_to_run = merge_filters(
-            selected_filters, select_filters(parent_filters, current_debug_level))
+            selected_filters,
+            select_filters(parent_filters, current_debug_level)
+        )
         filters_to_pass_down = merge_filters(filters, parent_filters)
 
         # Prepare contents
@@ -368,12 +375,14 @@ class Bundle(object):
         # such a change to be ignored. For now, we simply do not use the cache
         # for any bundle with dependencies. Another option would be to read
         # the contents of all files declared via "depends", and use them as a
-        # cache key modifier. For now I am worried about the performance impact.
+        # cache key modifier. For now I am worried about
+        # the performance impact.
         #
         # Note: This decision only affects the current bundle instance. Even if
         # dependencies cause us to ignore the cache for this bundle instance,
         # child bundles may still use it!
-        actually_skip_cache_here = disable_cache or bool(self.resolve_depends(env))
+        actually_skip_cache_here = (disable_cache
+                                    or bool(self.resolve_depends(env)))
 
         filtertool = FilterTool(
             env.cache, no_cache_read=actually_skip_cache_here,
@@ -426,7 +435,7 @@ class Bundle(object):
 
                 # Run input filters, unless open() told us not to.
                 hunk = filtertool.apply(hunk, filters_to_run, 'input',
-                                            kwargs=item_data)
+                                        kwargs=item_data)
                 hunks.append((hunk, item_data))
 
         # If this bundle is empty (if it has nested bundles, they did
@@ -438,7 +447,8 @@ class Bundle(object):
         # a filter here, by implementing a concat() method.
         try:
             try:
-                final = filtertool.apply_func(filters_to_run, 'concat', [hunks])
+                final = filtertool.apply_func(filters_to_run, 'concat',
+                                              [hunks])
             except MoreThanOneFilterError as e:
                 raise BuildError(e)
             except NoFilters:
@@ -467,9 +477,9 @@ class Bundle(object):
         that we are a container bundle, i.e. having no files of our own.
 
         First checks whether an update for this bundle is required, via the
-        configured ``updater`` (which is almost always the timestamp-based one).
-        Unless ``force`` is given, in which case the bundle will always be
-        built, without considering timestamps.
+        configured ``updater`` (which is almost always the timestamp-based
+        one). Unless ``force`` is given, in which case the bundle will always
+        be built, without considering timestamps.
 
         A ``FileHunk`` will be returned, or in a certain case, with no updater
         defined and force=False, the return value may be ``False``.
@@ -486,13 +496,16 @@ class Bundle(object):
         # already exists and nothing has changed.
         if force:
             update_needed = True
-        elif not has_placeholder(self.output) and \
-                not path.exists(self.resolve_output(env, self.output)):
+        elif (not has_placeholder(self.output) and
+              not path.exists(self.resolve_output(env, self.output))):
             update_needed = True
         else:
-            update_needed = env.updater.needs_rebuild(self, env) \
-                if env.updater else True
-            if update_needed==SKIP_CACHE:
+            if env.updater:
+                update_needed = env.updater.needs_rebuild(self, env)
+            else:
+                update_needed = True
+
+            if update_needed == SKIP_CACHE:
                 disable_cache = True
 
         if not update_needed:
@@ -526,7 +539,7 @@ class Bundle(object):
                     raise BuildError((
                         'You have not set the "versions" option, but %s '
                         'uses a version placeholder in the output target'
-                            % self))
+                        % self))
                 output = self.resolve_output(env, version=version)
                 hunk.save(output)
                 self.version = version
@@ -601,7 +614,7 @@ class Bundle(object):
 
         # Only query the version if we need to for performance
         version = None
-        if has_placeholder(self.output) or env.url_expire != False:
+        if has_placeholder(self.output) or env.url_expire is not False:
             # If auto-build is enabled, we must not use a cached version
             # value, or we might serve old versions.
             version = self.get_version(env, refresh=env.auto_build)
@@ -697,9 +710,11 @@ def pull_external(env, filename):
     # Generate the target filename. Use a hash to keep it unique and short,
     # but attach the base filename for readability.
     # The bit-shifting rids us of ugly leading - characters.
-    hashed_filename = hash(filename) & ((1<<64)-1)
-    rel_path = path.join('webassets-external',
-        "%s_%s" % (hashed_filename, path.basename(filename)))
+    hashed_filename = hash(filename) & ((1 << 64) - 1)
+    rel_path = path.join(
+        'webassets-external',
+        "%s_%s" % (hashed_filename, path.basename(filename))
+    )
     full_path = path.join(env.directory, rel_path)
 
     # Copy the file if necessary
@@ -774,5 +789,5 @@ def _effective_debug_level(env, bundle, extra_filters=None, default=None):
     return default
 
 
-has_files = lambda bundle: \
-                any([c for c in bundle.contents if not isinstance(c, Bundle)])
+has_files = lambda bundle: any([c for c in bundle.contents
+                                if not isinstance(c, Bundle)])
