@@ -14,7 +14,7 @@ also serve in other places.
 """
 
 import os
-from os import path
+
 from webassets import six
 from webassets.merge import BaseHunk
 from webassets.filter import Filter, freezedicts
@@ -170,8 +170,8 @@ class FilesystemCache(BaseCache):
                id(self) == id(other)
 
     def get(self, key):
-        filename = path.join(self.directory, '%s' % make_md5(self.V, key))
-        if not path.exists(filename):
+        filename = os.path.join(self.directory, '%s' % make_md5(self.V, key))
+        if not os.path.exists(filename):
             return None
         f = open(filename, 'rb')
         try:
@@ -182,7 +182,7 @@ class FilesystemCache(BaseCache):
         return safe_unpickle(result)
 
     def set(self, key, data):
-        filename = path.join(self.directory, '%s' % make_md5(self.V, key))
+        filename = os.path.join(self.directory, '%s' % make_md5(self.V, key))
         f = open(filename, 'wb')
         try:
             f.write(pickle.dumps(data))
@@ -202,9 +202,9 @@ def get_cache(option, env):
         return option()
 
     if option is True:
-        directory = path.join(env.directory, '.webassets-cache')
+        directory = os.path.join(env.directory, '.webassets-cache')
         # Auto-create the default directory
-        if not path.exists(directory):
+        if not os.path.exists(directory):
             os.makedirs(directory)
     else:
         directory = option
